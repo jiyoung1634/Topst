@@ -10,7 +10,7 @@ try:
     while True:
         button_state = GPIO.input(button_pin)  # 버튼 상태 읽기
         print(f"GPIO {button_pin} state: {button_state}")  # GPIO 상태 출력
-
+        
         if button_state == GPIO.LOW:
             print("Button Pressed")  # 버튼 눌림 상태
         else:
