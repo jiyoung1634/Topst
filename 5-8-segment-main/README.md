@@ -1,7 +1,7 @@
 import RPi.GPIO as GPIO
 import time
 
-button_pin = 6  # 버튼을 연결할 GPIO 핀 번호 (핀 번호가 맞는지 확인)
+button_pin = 5  # 버튼을 연결할 GPIO 핀 번호 (핀 번호가 맞는지 확인)
 
 GPIO.setmode(GPIO.BOARD)  # BOARD 모드 사용
 GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # 버튼 핀을 입력으로 설정, 풀업 저항 활성화
