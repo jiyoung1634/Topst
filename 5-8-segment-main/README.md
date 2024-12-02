@@ -11,7 +11,7 @@ e = 87  # GPIO Pin for segment E
 f = 83  # GPIO Pin for segment F
 g = 84  # GPIO Pin for segment G
 dp = 90  # GPIO Pin for Decimal Point
-button_pin = 17  # 버튼 GPIO 핀 (실제 버튼을 연결한 핀으로 수정 필요)
+button_pin = 6  # 버튼 GPIO 핀 (GPIO6으로 수정)
 
 # GPIO 핀 배열
 gpio = [a, b, c, d, e, f, g, dp]
