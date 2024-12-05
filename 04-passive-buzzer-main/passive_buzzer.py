@@ -64,18 +64,18 @@ def ipc_listener():
     """CAN 통신을 통해 수신한 메시지를 처리하는 함수"""
     while True:
         try:
-            print("IPC_Library.received_pucData", ' '.join(format(byte, '02X') for byte in IPC_Library.received_pucData))
-            
             if IPC_Library.received_pucData:
+                print("Received data:", ' '.join(format(byte, '02X') for byte in IPC_Library.received_pucData))
                 if IPC_Library.received_pucData[0] == 1:
                     print("Playing C")
                     play_tone(gpio_pin, FREQUENCIES['C'], 0.5)
                 elif IPC_Library.received_pucData[0] == 2:
                     print("Playing D")
                     play_tone(gpio_pin, FREQUENCIES['D'], 0.5)
-                # 추가적으로 다른 데이터 처리
                 else:
                     print("No relevant data received.")
+            else:
+                print("No data received.")
             time.sleep(0.1)
         except Exception as e:
             print(f"Error in IPC listener: {e}")
