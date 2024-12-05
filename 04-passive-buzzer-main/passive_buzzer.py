@@ -111,8 +111,9 @@ def main():
         start_can_listener()
 
         # CAN 메시지 대기
+        print("Waiting for CAN messages...")
         while True:
-            time.sleep(1)
+            time.sleep(1)  # 메시지가 수신될 때까지 대기
 
     except KeyboardInterrupt:
         print("\n프로그램이 종료되었습니다.")
