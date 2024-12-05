@@ -101,6 +101,7 @@ def set_spi(mosi_pin, sclk_pin, rclk_pin):
 
 # transfer data with combine rows
 def transfer_data(data, mosi_pin, sclk_pin, rclk_pin):
+    print(f"Debug: sclk_pin = {sclk_pin}")  # sclk_pin 값 확인
     send_data = [] # saving space for packaging data
     i = 0
     for byte in data:
