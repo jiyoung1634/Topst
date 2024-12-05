@@ -79,6 +79,7 @@ def ipc_listener():
             time.sleep(0.1)
         except Exception as e:
             print(f"Error in IPC listener: {e}")
+            time.sleep(1)  # 예외 발생 시 잠시 대기 후 계속 진행
 
 def play_tone(gpio_number, frequency, duration):
     period = 1.0 / frequency
