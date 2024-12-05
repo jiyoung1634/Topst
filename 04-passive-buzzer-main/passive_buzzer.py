@@ -1,61 +1,118 @@
 import sys
+import os
 import time
 import threading
-import Cangeroo  # Cangeroo 라이브러리 임포트
+import IPC_Library
 
-GPIO_PIN = 18  # 사용하려는 GPIO 핀 번호
+GPIO_EXPORT_PATH = "/sys/class/gpio/export"
+GPIO_UNEXPORT_PATH = "/sys/class/gpio/unexport"
+GPIO_DIRECTION_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/direction"
+GPIO_VALUE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/value"
+GPIO_BASE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}"
 
-# GPIO 설정 함수
-def setup_gpio(pin):
-    # GPIO 초기화 코드 (GPIO 핀을 출력 모드로 설정)
-    pass
+FREQUENCIES = {
+    'C': 261.63,  
+    'D': 293.66,  
+    'E': 329.63,  
+    'F': 349.23,  
+    'G': 392.00,  
+    'A': 440.00,  
+    'B': 493.88,  
+    'C5': 523.25  
+}
 
-# CAN 메시지 처리 함수
-def can_message_received(message):
-    """
-    수신된 CAN 메시지를 처리하는 함수
-    CAN 메시지 값에 따라 음을 출력하거나 GPIO 핀을 제어합니다.
-    """
-    if message == 1:
-        # C 노트 소리 출력
-        print("Playing C at 261.63 Hz")
-        play_tone(GPIO_PIN, 261.63, 1)
-    elif message == 2:
-        # D 노트 소리 출력
-        print("Playing D at 293.66 Hz")
-        play_tone(GPIO_PIN, 293.66, 1)
-    # 필요한 만큼 다른 음들을 추가할 수 있습니다.
+def is_gpio_exported(gpio_number):
+    gpio_base_path = GPIO_BASE_PATH_TEMPLATE.format(gpio_number)
+    return os.path.exists(gpio_base_path)
 
-# CAN 메시지 수신 함수
-def start_can_listener():
-    """
-    Cangeroo 라이브러리에서 CAN 메시지를 수신하여 can_message_received()를 호출합니다.
-    """
-    # CAN 통신을 위한 설정 (Cangeroo 라이브러리에서 메시지를 수신)
-    Cangeroo.start_receiving()  # 메시지 수신 시작
-    Cangeroo.set_callback(can_message_received)  # 콜백 함수 설정
+def export_gpio(gpio_number):
+    if not is_gpio_exported(gpio_number):
+        try:
+            with open(GPIO_EXPORT_PATH, 'w') as export_file:
+                export_file.write(str(gpio_number))
+        except IOError as e:
+            print(f"Error exporting GPIO: {e}")
+            sys.exit(1)
 
-# 톤 재생 함수
+def unexport_gpio(gpio_number):
+    try:
+        with open(GPIO_UNEXPORT_PATH, 'w') as unexport_file:
+            unexport_file.write(str(gpio_number))
+    except IOError as e:
+        print(f"Error unexporting GPIO: {e}")
+        sys.exit(1)
+
+def set_gpio_direction(gpio_number, direction):
+    gpio_direction_path = GPIO_DIRECTION_PATH_TEMPLATE.format(gpio_number)
+    try:
+        with open(gpio_direction_path, 'w') as direction_file:
+            direction_file.write(direction)
+    except IOError as e:
+        print(f"Error setting GPIO direction: {e}")
+        sys.exit(1)
+
+def set_gpio_value(gpio_number, value):
+    gpio_value_path = GPIO_VALUE_PATH_TEMPLATE.format(gpio_number)
+    try:
+        with open(gpio_value_path, 'w') as value_file:
+            value_file.write(str(value))
+    except IOError as e:
+        print(f"Error setting GPIO value: {e}")
+        sys.exit(1)
+
+def ipc_listener():
+    """CAN 통신을 통해 수신한 메시지를 처리하는 함수"""
+    while True:
+        try:
+            print("IPC_Library.received_pucData", ' '.join(format(byte, '02X') for byte in IPC_Library.received_pucData))
+            
+            if IPC_Library.received_pucData:
+                if IPC_Library.received_pucData[0] == 1:
+                    print("Playing C")
+                    play_tone(gpio_pin, FREQUENCIES['C'], 0.5)
+                elif IPC_Library.received_pucData[0] == 2:
+                    print("Playing D")
+                    play_tone(gpio_pin, FREQUENCIES['D'], 0.5)
+                # 추가적으로 다른 데이터 처리
+                else:
+                    print("No relevant data received.")
+            time.sleep(0.1)
+        except Exception as e:
+            print(f"Error in IPC listener: {e}")
+
 def play_tone(gpio_number, frequency, duration):
-    """
-    지정된 GPIO 핀을 통해 지정된 주파수와 시간 동안 음을 재생합니다.
-    """
-    # 음을 재생하는 로직
-    pass  # 실제 음을 재생하는 코드가 여기에 들어갑니다.
+    period = 1.0 / frequency
+    half_period = period / 2
+    end_time = time.time() + duration
+
+    while time.time() < end_time:
+        set_gpio_value(gpio_number, 1)
+        time.sleep(half_period)
+        set_gpio_value(gpio_number, 0)
+        time.sleep(half_period)
 
 if __name__ == "__main__":
+    gpio_pin = 89  # 사용할 GPIO 핀 번호
+
     try:
-        # GPIO 설정
-        setup_gpio(GPIO_PIN)
+        # IPC 통신을 위한 쓰레드 실행
+        ipc_thread = threading.Thread(target=ipc_listener)
+        ipc_thread.daemon = True  # 데몬 쓰레드로 설정하여 프로그램 종료 시 자동으로 종료되게
+        ipc_thread.start()
 
-        # CAN 메시지 수신 시작
-        start_can_listener()
+        # GPIO 초기화
+        export_gpio(gpio_pin)
+        set_gpio_direction(gpio_pin, "out")
 
-        # 프로그램은 CAN 메시지를 수신하고, 메시지에 따라 소리를 내거나 GPIO를 제어합니다.
+        # 메인 루프 - CAN 메시지를 계속 기다리며 처리
         while True:
-            # 메시지를 수신하면서 계속 대기
-            time.sleep(1)
+            pass  # 지속적으로 IPC 데이터를 처리합니다.
 
     except KeyboardInterrupt:
-        print("프로그램 종료")
-        sys.exit(0)
+        print("\nProgram interrupted")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        unexport_gpio(gpio_pin)
+
+    sys.exit(0)
