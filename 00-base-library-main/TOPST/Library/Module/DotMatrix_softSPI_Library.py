@@ -24,7 +24,7 @@ def transfer_data(data, mosi_pin, sclk_pin, rclk_pin):
         send_data.append(struct.pack('BB', rows[i], byte)) # package data and rows
         i+=1
     for m in range(len(data)):
-        spi.write_data(send_data[m],  mosi_pin, sclk_pin) # write packaging data
+        spi.write_data(send_data[m], rclk_pin, mosi_pin, sclk_pin) # write packaging data
         print(send_data[m])
         spi.RClock(rclk_pin) # register toggle
 
