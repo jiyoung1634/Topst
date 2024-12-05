@@ -1,24 +1,25 @@
-
 import sys
 import os
 import time
+import Cangeroo  # Cangeroo 라이브러리 임포트
 
-
+# GPIO 핀 설정
 GPIO_EXPORT_PATH = "/sys/class/gpio/export"
 GPIO_UNEXPORT_PATH = "/sys/class/gpio/unexport"
 GPIO_DIRECTION_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/direction"
 GPIO_VALUE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}/value"
 GPIO_BASE_PATH_TEMPLATE = "/sys/class/gpio/gpio{}"
 
+# 음계 주파수 정의
 FREQUENCIES = {
-    'C': 261.63,  
-    'D': 293.66,  
-    'E': 329.63,  
-    'F': 349.23,  
-    'G': 392.00,  
-    'A': 440.00,  
-    'B': 493.88,  
-    'C5': 523.25  
+    'C': 261.63,  # 도
+    'D': 293.66,  # 레
+    'E': 329.63,  # 미
+    'F': 349.23,  # 파
+    'G': 392.00,  # 솔
+    'A': 440.00,  # 라
+    'B': 493.88,  # 시
+    'C5': 523.25  # 높은 도
 }
 
 def is_gpio_exported(gpio_number):
@@ -71,27 +72,51 @@ def play_tone(gpio_number, frequency, duration):
         set_gpio_value(gpio_number, 0)
         time.sleep(half_period)
 
+# CAN 메시지 수신 후 버저 음 출력
+def can_message_received(data):
+    # 수신한 CAN 데이터가 음계 값에 해당하면 버저에서 소리 출력
+    note_map = {
+        1: 'C',  # 1 -> 도
+        2: 'D',  # 2 -> 레
+        3: 'E',  # 3 -> 미
+        4: 'F',  # 4 -> 파
+        5: 'G',  # 5 -> 솔
+        6: 'A',  # 6 -> 라
+        7: 'B',  # 7 -> 시
+        8: 'C5'  # 8 -> 높은 도
+    }
 
+    if data in note_map:
+        note = note_map[data]
+        frequency = FREQUENCIES[note]
+        print(f"Playing {note} at {frequency} Hz")
+        play_tone(89, frequency, 0.5)  # GPIO 89번 핀에서 음 출력
 
-if __name__ == "__main__":
-    gpio_pin = 89  
+# Cangeroo를 통해 CAN 메시지를 수신
+def start_can_listener():
+    Cangeroo.set_callback(can_message_received)  # 수신한 메시지 처리 함수 등록
+    Cangeroo.start_receiving()  # CAN 메시지 수신 시작
+
+def main():
+    gpio_pin = 89  # 버저가 연결된 GPIO 핀 번호
 
     try:
         export_gpio(gpio_pin)
         set_gpio_direction(gpio_pin, "out")
 
-        for note, freq in FREQUENCIES.items():
-            print(f"Playing {note} at {freq} Hz") 
-            play_tone(gpio_pin, freq, 0.5)
-            time.sleep(0.1)
+        # CAN 메시지 수신 시작
+        start_can_listener()
+
+        # CAN 메시지 대기
+        while True:
+            time.sleep(1)
 
     except KeyboardInterrupt:
-        print("\nOperation stopped by User")
+        print("\n프로그램이 종료되었습니다.")
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
         unexport_gpio(gpio_pin)
 
-    sys.exit(0)
-
-        
+if __name__ == "__main__":
+    main()
