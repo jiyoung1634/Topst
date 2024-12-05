@@ -71,6 +71,7 @@ def duflex_byte(byte, sclk_pin, mosi_pin, miso_pin):
 
 # write data in slave device
 def write_data(data, rclk_pin, mosi_pin,sclk_pin):
+    print(f"Debug: sclk_pin = {sclk_pin}")
     for byte in data:
         write_byte(byte,sclk_pin, mosi_pin)
         RClock(rclk_pin)
