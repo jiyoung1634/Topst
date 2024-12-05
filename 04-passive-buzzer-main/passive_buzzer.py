@@ -74,6 +74,9 @@ def play_tone(gpio_number, frequency, duration):
 
 # CAN 메시지 수신 후 버저 음 출력
 def can_message_received(data):
+    # 디버깅 출력
+    print(f"Received CAN data: {data}")
+
     # 수신한 CAN 데이터가 음계 값에 해당하면 버저에서 소리 출력
     note_map = {
         1: 'C',  # 1 -> 도
